@@ -1,0 +1,66 @@
+import coinflex_ws
+import time
+import json
+
+key = ''        # Add your api key here
+secret = ''     # Add your api secret here
+url = 'wss://v2stgapi.coinflex.com/v2/websocket'    # Change to 'wss://v2api.coinflex.com/v2/websocket to access live trading
+data = 'data'  # Select your market here
+market = 'BTC-USD-SWAP-LIN'
+
+ws = coinflex_ws.CoinFLEXWebSocket(
+    url=url,
+    market=market,
+    api_key=key,
+    api_secret=secret
+)
+
+ws.subscribe_depth(5)
+
+x=1
+
+all_asks = []
+all_bids = []
+
+seconds_left = 1.5	# Only run for 10 seconds
+
+while seconds_left > 0:
+	result = ws.get_depth(5)
+	if len(result) == 3:
+		data = result["data"][0]
+		asks = data["asks"]
+		bids = data["bids"]
+		ask_prices = [pair[0] for pair in asks]
+		ask_amount = [pair[1] for pair in asks]
+		bid_prices = [pair[0] for pair in bids]
+		bid_amount = [pair[1] for pair in bids]
+
+		all_asks += ask_prices
+		all_bids += bid_prices
+	time.sleep(1)	# Get data every 1 second, dont do less than 1 second as server takes time to retrieve data
+	time.sleep(1)	# Get data every 1 second, dont do less than 1 second as server takes time to retrieve data
+	seconds_left -= 1
+
+midprice = (min(all_asks) + max(all_bids))/2 # lowest price aming the sellers + best/highest price among the buyer ( average)
+order_price = midprice - 1000
+
+print(all_asks)
+print(all_bids)
+
+print(midprice)
+print(order_price)
+
+
+ws.batch_place_order([
+            {
+              "clientOrderId": 1,
+              "marketCode": "BTC-USD-SWAP-LIN",
+              "side": "BUY",
+              "orderType": "LIMIT",
+              "quantity": 1,
+              "timeInForce": "MAKER_ONLY",
+              "price": order_price
+            },
+        ])
+'''
+'''
